@@ -134,12 +134,26 @@ async def test_full_deployment_workflow(client: AsyncClient, auth_headers: dict[
     assert status_resp.status_code == 200
     assert status_resp.json()["id"] == deployment_id
 
+    # Populate mock service record in test DB for restart and logs test steps
+    from app.repositories.deployment_repository import DeploymentRepository
+    async with TestSessionLocal() as session:
+        dep_repo = DeploymentRepository(session)
+        await dep_repo.add_service(
+            deployment_id=uuid.UUID(deployment_id),
+            service_id="api",
+            container_name="cloudpilot-test-api",
+            image="cloudpilot/test/api:v1",
+            port=8000,
+            public=True,
+        )
+
     # 6. Fetch services list
     services_resp = await client.get(
         f"/api/v1/deployments/{deployment_id}/services",
         headers=auth_headers,
     )
     assert services_resp.status_code == 200
+    assert len(services_resp.json()) >= 1
 
     # 7. Restart service (mocked container)
     restart_resp = await client.post(

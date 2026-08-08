@@ -1,11 +1,12 @@
-import { X, Layers, Activity, Cpu, Shield, Globe, Box, Database, Terminal, RefreshCw, Play } from 'lucide-react';
-import type { DeploymentServiceInfo, HealthCheck, InfrastructurePlan, ResourceProfile, ServiceDefinition } from '@/types';
+import { X, Layers, Activity, Cpu, Shield, Globe, Box, Database, Terminal, RefreshCw, Play, ShieldCheck, AlertTriangle, Clock } from 'lucide-react';
+import type { DeploymentServiceInfo, HealthCheck, HealthStatus, InfrastructurePlan, ResourceProfile, ServiceDefinition } from '@/types';
 import { Button } from '@/components/ui/Button';
 
 interface Props {
   service: ServiceDefinition;
   plan: InfrastructurePlan;
   deploymentService?: DeploymentServiceInfo;
+  healthStatus?: HealthStatus;
   onClose: () => void;
   onRestartService?: (serviceId: string) => void;
   onOpenLogs?: (serviceId: string, serviceName: string) => void;
@@ -15,6 +16,7 @@ export function ServiceDetailPanel({
   service,
   plan,
   deploymentService,
+  healthStatus,
   onClose,
   onRestartService,
   onOpenLogs,
@@ -25,7 +27,7 @@ export function ServiceDetailPanel({
   const envVars = plan.environment.find((e) => e.service === service.id)?.variables || [];
 
   return (
-    <div className="card p-5 space-y-5 animate-fade-in border-brand/40 shadow-xl relative">
+    <div className="card p-5 border-brand/30 animate-fade-in relative space-y-4">
       {/* Close button */}
       <button
         onClick={onClose}
@@ -46,12 +48,20 @@ export function ServiceDetailPanel({
                   ? 'bg-accent-green/10 text-accent-green border-accent-green/20'
                   : 'bg-accent-red/10 text-accent-red border-accent-red/20'
               }`}>
-                ● {deploymentService.actual_state}
+                ● Container: {deploymentService.actual_state}
               </span>
-            ) : service.public ? (
-              <span className="tag bg-accent-green/10 text-accent-green border border-accent-green/20">Public</span>
-            ) : (
-              <span className="tag bg-surface-overlay text-text-muted">Private</span>
+            ) : null}
+
+            {healthStatus && (
+              <span className={`tag border text-xs font-bold ${
+                healthStatus === 'HEALTHY'
+                  ? 'bg-accent-green/10 text-accent-green border-accent-green/30'
+                  : healthStatus === 'DEGRADED'
+                  ? 'bg-accent-yellow/10 text-accent-yellow border-accent-yellow/30'
+                  : 'bg-accent-red/10 text-accent-red border-accent-red/30'
+              }`}>
+                Health: {healthStatus}
+              </span>
             )}
           </div>
           <p className="text-xs text-text-muted font-mono">{service.source_path || `/${service.id}`}</p>

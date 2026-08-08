@@ -88,7 +88,7 @@ class DockerRuntime(ContainerRuntime):
         self._client = None
         self._init_client()
 
-    def _init_client() -> None:
+    def _init_client(self) -> None:
         try:
             import docker
             self._client = docker.from_env()

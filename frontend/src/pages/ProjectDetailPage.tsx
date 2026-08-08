@@ -18,6 +18,7 @@ import { getErrorMessage } from '@/services/api';
 import { useAnalysis } from '@/hooks/useAnalysis';
 import { usePlan } from '@/hooks/usePlan';
 import { useDeployment } from '@/hooks/useDeployment';
+import { useHealth } from '@/hooks/useHealth';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
@@ -27,6 +28,8 @@ import { ServiceDetailPanel } from '@/components/plan/ServiceDetailPanel';
 import { PlanSummaryView } from '@/components/plan/PlanSummaryView';
 import { DeploymentProgressTracker } from '@/components/deployment/DeploymentProgressTracker';
 import { ServiceLogsModal } from '@/components/deployment/ServiceLogsModal';
+import { DeploymentHealthCard } from '@/components/health/DeploymentHealthCard';
+import { HealthEventsTimeline } from '@/components/health/HealthEventsTimeline';
 import type { Project, ServiceDefinition } from '@/types';
 
 type Tab = 'overview' | 'architecture' | 'deployments' | 'observability' | 'incidents' | 'settings';
@@ -71,6 +74,7 @@ function ArchitectureTab({ projectId }: { projectId: string }) {
   const { analysis, isLoading: isAnalyzing, error: analysisError, startAnalysis } = useAnalysis();
   const { planResult, isLoading: isPlanning, error: planError, generatePlan, regeneratePlan } = usePlan();
   const { deployment, services: deploymentServices, isLoading: isDeploying, error: deployError, triggerDeployment, stopDeployment, restartService } = useDeployment();
+  const { health, events: healthEvents } = useHealth(deployment?.id ?? null);
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +111,7 @@ function ArchitectureTab({ projectId }: { projectId: string }) {
   const plan = planResult?.plan_data;
   const selectedService: ServiceDefinition | undefined = plan?.services.find((s) => s.id === selectedServiceId);
   const selectedDeploymentService = deploymentServices.find((s) => s.service_id === selectedServiceId);
+  const selectedHealthStatus = health?.services[selectedServiceId || ''];
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -266,6 +271,12 @@ function ArchitectureTab({ projectId }: { projectId: string }) {
           {/* Live Deployment Progress Timeline */}
           {deployment && <DeploymentProgressTracker deployment={deployment} />}
 
+          {/* Phase 5: Deployment Health Engine Summary Card */}
+          {health && <DeploymentHealthCard health={health} />}
+
+          {/* Phase 5: Health Events Timeline */}
+          {healthEvents.length > 0 && <HealthEventsTimeline events={healthEvents} />}
+
           {/* Plan Summary View */}
           <PlanSummaryView
             plan={plan}
@@ -277,21 +288,23 @@ function ArchitectureTab({ projectId }: { projectId: string }) {
             isRegenerating={isPlanActive}
           />
 
-          {/* Interactive Topology Graph with Live Status Badges */}
+          {/* Interactive Topology Graph with Live Container & Health Badges */}
           <ArchitectureGraphView
             graph={plan.graph}
             services={plan.services}
             deploymentServices={deploymentServices}
+            healthMap={health?.services}
             selectedServiceId={selectedServiceId}
             onSelectService={(id) => setSelectedServiceId(id)}
           />
 
-          {/* Service Detail Panel with Restart & Logs Actions */}
+          {/* Service Detail Panel with Restart, Logs & Health Actions */}
           {selectedService && (
             <ServiceDetailPanel
               service={selectedService}
               plan={plan}
               deploymentService={selectedDeploymentService}
+              healthStatus={selectedHealthStatus}
               onClose={() => setSelectedServiceId(null)}
               onRestartService={(sid) => restartService(sid)}
               onOpenLogs={(sid, sname) => setLogsModalService({ id: sid, name: sname })}

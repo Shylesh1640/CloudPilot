@@ -17,20 +17,24 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import analyses, auth, deployments, health, plans, projects
+from app.api.routes import analyses, auth, deployments, health, health_check, plans, projects
 from app.core.config import settings
 from app.core.logging import RequestLoggingMiddleware, configure_logging
+from app.services.health.scheduler import HealthScheduler
 
 # ── Configure logging immediately ────────────────────────────────────────────
 configure_logging()
 logger = logging.getLogger("cloudpilot.main")
+health_scheduler = HealthScheduler()
 
 
 # ── Lifespan ─────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 CloudPilot API starting up (env=%s)", settings.ENVIRONMENT)
+    health_scheduler.start()
     yield
+    health_scheduler.stop()
     logger.info("🛑 CloudPilot API shutting down")
 
 
@@ -43,8 +47,8 @@ app = FastAPI(
         "**Phase 2**: GitHub Repository Analyzer.\n\n"
         "**Phase 3**: AI Infrastructure Architecture Planner.\n\n"
         "**Phase 4**: Container & Service Orchestrator.\n\n"
-        "Phases 5–10 will add health monitoring, real-time observability, "
-        "autoscaling, failure injection, and AI root-cause analysis."
+        "**Phase 5**: Deployment & Health Check Engine.\n\n"
+        "Phases 6–10 will add real-time observability, autoscaling, failure injection, and AI root-cause analysis."
     ),
     version="1.0.0",
     docs_url="/docs",
@@ -67,6 +71,7 @@ app.add_middleware(RequestLoggingMiddleware)
 API_PREFIX = "/api/v1"
 
 app.include_router(health.router, prefix=API_PREFIX)
+app.include_router(health_check.router, prefix=API_PREFIX)
 app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(projects.router, prefix=API_PREFIX)
 app.include_router(analyses.router)

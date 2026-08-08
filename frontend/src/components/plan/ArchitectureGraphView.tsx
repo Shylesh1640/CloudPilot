@@ -1,10 +1,12 @@
-import { Box, Database, Cpu, Layers, Globe, Shield, ZoomIn, ZoomOut, RefreshCw, Activity } from 'lucide-react';
-import type { ArchitectureGraph, DeploymentServiceInfo, GraphNode, ServiceDefinition } from '@/types';
+import { Box, Database, Cpu, Layers, Globe, Shield, ZoomIn, ZoomOut, RefreshCw, Activity, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import type { ArchitectureGraph, DeploymentServiceInfo, GraphNode, ServiceDefinition, HealthStatus } from '@/types';
 
 interface Props {
   graph: ArchitectureGraph;
   services: ServiceDefinition[];
   deploymentServices?: DeploymentServiceInfo[];
+  healthMap?: Record<string, HealthStatus>;
   selectedServiceId: string | null;
   onSelectService: (serviceId: string) => void;
 }
@@ -184,7 +186,8 @@ export function ArchitectureGraphView({
                     <Icon size={14} className={style.text} />
                     <span className="text-xs font-semibold text-text-primary truncate">{node.label}</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
+                    {/* Container State Dot */}
                     {liveStatusMap[node.id] && (
                       <span
                         className={`w-2 h-2 rounded-full inline-block ${
@@ -197,9 +200,26 @@ export function ArchitectureGraphView({
                         title={`Container State: ${liveStatusMap[node.id]}`}
                       />
                     )}
+
+                    {/* Health Status Badge */}
+                    {healthMap && healthMap[node.id] && (
+                      <span
+                        className={`text-[9px] font-bold px-1 rounded border uppercase ${
+                          healthMap[node.id] === 'HEALTHY'
+                            ? 'bg-accent-green/20 text-accent-green border-accent-green/30'
+                            : healthMap[node.id] === 'DEGRADED'
+                            ? 'bg-accent-yellow/20 text-accent-yellow border-accent-yellow/30'
+                            : 'bg-accent-red/20 text-accent-red border-accent-red/30'
+                        }`}
+                        title={`Application Health: ${healthMap[node.id]}`}
+                      >
+                        {healthMap[node.id] === 'HEALTHY' ? '✓' : '!'}
+                      </span>
+                    )}
+
                     {node.public && (
-                      <span className="tag bg-accent-green/20 text-accent-green text-[9px] px-1 py-0.2" title="Public Entrypoint">
-                        <Globe size={10} />
+                      <span className="text-[10px] bg-accent-green/20 text-accent-green px-1 rounded font-mono">
+                        PUB
                       </span>
                     )}
                   </div>

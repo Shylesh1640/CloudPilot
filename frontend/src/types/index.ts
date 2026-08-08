@@ -353,6 +353,55 @@ export interface PlanResultRead extends PlanRead {
   } | null;
 }
 
+// ── Phase 5: Deployment & Health Check Engine Types
+export type HealthStatus = 'UNKNOWN' | 'STARTING' | 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' | 'FAILED';
+
+export interface ServiceHealthRead {
+  id: string;
+  deployment_service_id: string;
+  service_id: string;
+  status: HealthStatus;
+  consecutive_failures: number;
+  consecutive_successes: number;
+  latency_ms?: number;
+  last_check_at?: string;
+  last_success_at?: string;
+  last_failure_at?: string;
+  last_error?: string;
+  updated_at: string;
+}
+
+export interface DeploymentHealthRead {
+  deployment_id: string;
+  status: HealthStatus;
+  overall_health: HealthStatus;
+  services: Record<string, HealthStatus>;
+  avg_latency_ms?: number;
+}
+
+export interface HealthCheckRecord {
+  id: string;
+  deployment_service_id: string;
+  check_type: string;
+  status: HealthStatus;
+  latency_ms?: number;
+  status_code?: number;
+  error_message?: string;
+  checked_at: string;
+}
+
+export interface HealthEvent {
+  id: string;
+  project_id: string;
+  deployment_id: string;
+  service_id: string;
+  event_type: string;
+  previous_state?: string;
+  new_state: string;
+  message: string;
+  created_at: string;
+}
+
 // ── Phase 4: Container & Orchestration Types ─────────────────────────────────
 
 export type DeploymentStatus =

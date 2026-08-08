@@ -4,5 +4,16 @@ from app.models.project import Project
 from app.models.repository_analysis import RepositoryAnalysis
 from app.models.infrastructure_plan import InfrastructurePlanModel
 from app.models.deployment import DeploymentModel, DeploymentServiceModel
+from app.models.health import ServiceHealthModel, HealthCheckRecordModel, HealthEventModel
 
-__all__ = ["User", "Project", "RepositoryAnalysis", "InfrastructurePlanModel", "DeploymentModel", "DeploymentServiceModel"]
+__all__ = [
+    "User",
+    "Project",
+    "RepositoryAnalysis",
+    "InfrastructurePlanModel",
+    "DeploymentModel",
+    "DeploymentServiceModel",
+    "ServiceHealthModel",
+    "HealthCheckRecordModel",
+    "HealthEventModel",
+]
