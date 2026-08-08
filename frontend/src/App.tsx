@@ -8,6 +8,7 @@ import { RegisterPage } from '@/pages/RegisterPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ProjectsPage } from '@/pages/ProjectsPage';
 import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
+import { AnalysisResultPage } from '@/pages/AnalysisResultPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+            <Route path="/projects/:projectId/analysis/:analysisId" element={<AnalysisResultPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 

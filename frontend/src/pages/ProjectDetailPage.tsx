@@ -2,29 +2,38 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
-  Globe,
   GitBranch,
   Activity,
-  AlertTriangle,
-  Settings,
   Calendar,
   Edit2,
   Check,
   X,
+  Search,
+  Play,
+  Square,
+  Sparkles,
 } from 'lucide-react';
 import { projectService } from '@/services/projectService';
 import { getErrorMessage } from '@/services/api';
+import { useAnalysis } from '@/hooks/useAnalysis';
+import { usePlan } from '@/hooks/usePlan';
+import { useDeployment } from '@/hooks/useDeployment';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import type { Project } from '@/types';
+import { ArchitectureGraphView } from '@/components/plan/ArchitectureGraphView';
+import { ServiceDetailPanel } from '@/components/plan/ServiceDetailPanel';
+import { PlanSummaryView } from '@/components/plan/PlanSummaryView';
+import { DeploymentProgressTracker } from '@/components/deployment/DeploymentProgressTracker';
+import { ServiceLogsModal } from '@/components/deployment/ServiceLogsModal';
+import type { Project, ServiceDefinition } from '@/types';
 
 type Tab = 'overview' | 'architecture' | 'deployments' | 'observability' | 'incidents' | 'settings';
 
 const tabs: { id: Tab; label: string; available: boolean; phase?: string }[] = [
   { id: 'overview', label: 'Overview', available: true },
-  { id: 'architecture', label: 'Architecture', available: false, phase: 'Phase 3' },
+  { id: 'architecture', label: 'Architecture', available: true },
   { id: 'deployments', label: 'Deployments', available: false, phase: 'Phase 5' },
   { id: 'observability', label: 'Observability', available: false, phase: 'Phase 6' },
   { id: 'incidents', label: 'Incidents', available: false, phase: 'Phase 9' },
@@ -52,6 +61,256 @@ function formatDate(iso: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function ArchitectureTab({ projectId }: { projectId: string }) {
+  const [repoUrl, setRepoUrl] = useState('');
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [logsModalService, setLogsModalService] = useState<{ id: string; name: string } | null>(null);
+
+  const { analysis, isLoading: isAnalyzing, error: analysisError, startAnalysis } = useAnalysis();
+  const { planResult, isLoading: isPlanning, error: planError, generatePlan, regeneratePlan } = usePlan();
+  const { deployment, services: deploymentServices, isLoading: isDeploying, error: deployError, triggerDeployment, stopDeployment, restartService } = useDeployment();
+
+  const handleAnalyze = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!repoUrl.trim()) return;
+    try {
+      await startAnalysis(projectId, repoUrl.trim());
+    } catch {}
+  };
+
+  const handleGeneratePlan = async () => {
+    if (!analysis) return;
+    try {
+      await generatePlan(analysis.id);
+    } catch {}
+  };
+
+  const handleRegeneratePlan = async () => {
+    if (!planResult) return;
+    try {
+      await regeneratePlan(planResult.id);
+    } catch {}
+  };
+
+  const handleDeploy = async () => {
+    if (!planResult) return;
+    try {
+      await triggerDeployment(planResult.id);
+    } catch {}
+  };
+
+  const isAnalysisActive = analysis && ['PENDING', 'CLONING', 'SCANNING', 'ANALYZING'].includes(analysis.status);
+  const isPlanActive = isPlanning || (planResult && ['PENDING', 'GENERATING', 'VALIDATING'].includes(planResult.status));
+
+  const plan = planResult?.plan_data;
+  const selectedService: ServiceDefinition | undefined = plan?.services.find((s) => s.id === selectedServiceId);
+  const selectedDeploymentService = deploymentServices.find((s) => s.service_id === selectedServiceId);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* 1. Repository Connection Form */}
+      {!analysis && (
+        <div className="card p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <GitBranch size={16} className="text-brand-light" />
+            <h2 className="text-sm font-semibold">Connect GitHub Repository</h2>
+          </div>
+          <p className="text-xs text-text-muted mb-4">
+            Enter a public GitHub repository URL to inspect code, frameworks, and generate an AI infrastructure plan.
+          </p>
+
+          <form onSubmit={handleAnalyze} className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                id="github-repo-url"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
+                placeholder="https://github.com/user/repository"
+                className="flex-1"
+                disabled={isAnalysisActive || isAnalyzing}
+              />
+              <Button
+                id="analyze-repo-btn"
+                type="submit"
+                isLoading={isAnalyzing || isAnalysisActive}
+                disabled={!repoUrl.trim()}
+                className="gap-2 flex-shrink-0"
+              >
+                <Search size={14} />
+                Analyze Repository
+              </Button>
+            </div>
+            {analysisError && (
+              <div className="bg-accent-red/10 border border-accent-red/20 rounded-md p-3">
+                <p className="text-xs text-accent-red">{analysisError}</p>
+              </div>
+            )}
+          </form>
+        </div>
+      )}
+
+      {/* 2. Analysis Progress */}
+      {analysis && isAnalysisActive && (
+        <div className="card p-6 space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <LoadingSpinner size="sm" />
+              <h3 className="text-sm font-semibold text-text-primary">Analyzing Repository...</h3>
+            </div>
+            <span className="text-xs font-mono text-brand-light">{analysis.progress}%</span>
+          </div>
+
+          <div className="w-full bg-surface-overlay h-2 rounded-full overflow-hidden border border-surface-border">
+            <div
+              className="bg-brand h-full transition-all duration-300 ease-out"
+              style={{ width: `${analysis.progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 3. Analysis Completed & Trigger AI Plan Button */}
+      {analysis && analysis.status === 'COMPLETED' && !planResult && (
+        <div className="card p-6 space-y-4 border-brand/30 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-text-primary">
+                  {analysis.repository_name || 'Repository Profile'}
+                </h3>
+                <span className="tag bg-accent-green/10 text-accent-green border border-accent-green/20">
+                  Analysis Complete
+                </span>
+              </div>
+              <p className="text-xs text-text-muted mt-0.5">{analysis.repository_url}</p>
+            </div>
+            <Button
+              id="generate-ai-plan-btn"
+              onClick={handleGeneratePlan}
+              isLoading={isPlanActive}
+              className="gap-2 bg-brand hover:bg-brand-hover"
+            >
+              <Sparkles size={14} />
+              Generate Infrastructure Plan
+            </Button>
+          </div>
+
+          {planError && (
+            <div className="bg-accent-red/10 border border-accent-red/20 rounded-md p-3">
+              <p className="text-xs text-accent-red">{planError}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. Plan Generation Progress */}
+      {isPlanActive && (
+        <div className="card p-6 space-y-4 animate-fade-in border-brand/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <LoadingSpinner size="sm" />
+              <h3 className="text-sm font-semibold text-text-primary">AI Architecture Planning in Progress...</h3>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Phase 3 & 4: Plan View + Deploy Action Header */}
+      {planResult && planResult.status === 'COMPLETED' && plan && (
+        <div className="space-y-6 animate-fade-in">
+
+          {/* Deploy Action Control Header */}
+          <div className="card p-5 border-brand/40 flex items-center justify-between bg-surface-overlay">
+            <div>
+              <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                <Play size={16} className="text-accent-green" />
+                Container Service Orchestrator (Phase 4)
+              </h3>
+              <p className="text-xs text-text-muted mt-0.5">
+                Execute validated topology plan directly on the Docker Engine host.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {deployment && deployment.status === 'RUNNING' && (
+                <Button
+                  variant="danger"
+                  onClick={stopDeployment}
+                  className="gap-1.5 text-xs"
+                >
+                  <Square size={13} />
+                  Stop Deployment
+                </Button>
+              )}
+
+              <Button
+                id="deploy-application-btn"
+                onClick={handleDeploy}
+                isLoading={isDeploying}
+                className="gap-2 bg-accent-green hover:bg-accent-green/90 text-black font-bold"
+              >
+                <Play size={14} />
+                Deploy Application
+              </Button>
+            </div>
+          </div>
+
+          {deployError && (
+            <div className="bg-accent-red/10 border border-accent-red/20 rounded-md p-3">
+              <p className="text-xs text-accent-red">{deployError}</p>
+            </div>
+          )}
+
+          {/* Live Deployment Progress Timeline */}
+          {deployment && <DeploymentProgressTracker deployment={deployment} />}
+
+          {/* Plan Summary View */}
+          <PlanSummaryView
+            plan={plan}
+            version={planResult.version}
+            aiProvider={planResult.ai_provider}
+            aiModel={planResult.ai_model}
+            durationMs={planResult.generation_duration_ms}
+            onRegenerate={handleRegeneratePlan}
+            isRegenerating={isPlanActive}
+          />
+
+          {/* Interactive Topology Graph with Live Status Badges */}
+          <ArchitectureGraphView
+            graph={plan.graph}
+            services={plan.services}
+            deploymentServices={deploymentServices}
+            selectedServiceId={selectedServiceId}
+            onSelectService={(id) => setSelectedServiceId(id)}
+          />
+
+          {/* Service Detail Panel with Restart & Logs Actions */}
+          {selectedService && (
+            <ServiceDetailPanel
+              service={selectedService}
+              plan={plan}
+              deploymentService={selectedDeploymentService}
+              onClose={() => setSelectedServiceId(null)}
+              onRestartService={(sid) => restartService(sid)}
+              onOpenLogs={(sid, sname) => setLogsModalService({ id: sid, name: sname })}
+            />
+          )}
+
+          {/* Container Logs Viewer Modal */}
+          {logsModalService && deployment && (
+            <ServiceLogsModal
+              deploymentId={deployment.id}
+              serviceId={logsModalService.id}
+              serviceName={logsModalService.name}
+              onClose={() => setLogsModalService(null)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ProjectDetailPage() {
@@ -125,7 +384,7 @@ export function ProjectDetailPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-6 max-w-6xl mx-auto animate-fade-in">
       {/* Breadcrumb */}
       <Link
         to="/projects"
@@ -259,21 +518,22 @@ export function ProjectDetailPage() {
             </dl>
           </div>
 
-          {/* Next Steps */}
+          {/* Roadmap */}
           <div className="card p-4">
-            <h3 className="text-sm font-semibold mb-3">Next Steps</h3>
+            <h3 className="text-sm font-semibold mb-3">Phase Roadmap</h3>
             <div className="space-y-2">
               {[
-                { label: 'Connect GitHub repository', phase: 'Phase 2', icon: GitBranch },
-                { label: 'Generate infrastructure plan', phase: 'Phase 3', icon: Globe },
-                { label: 'Deploy containers', phase: 'Phase 4', icon: Activity },
+                { label: 'Connect & Analyze GitHub repository', phase: 'Phase 2', icon: GitBranch, active: true },
+                { label: 'Generate AI infrastructure plan', phase: 'Phase 3', icon: Sparkles, active: true },
+                { label: 'Container & Service Orchestrator', phase: 'Phase 4', icon: Play, active: true },
+                { label: 'Health Check & Monitoring Engine', phase: 'Phase 5', icon: Activity },
               ].map((step) => {
                 const Icon = step.icon;
                 return (
-                  <div key={step.label} className="flex items-center gap-2.5 p-2 rounded-md bg-surface-overlay">
-                    <Icon size={13} className="text-text-muted flex-shrink-0" />
-                    <span className="text-xs text-text-secondary flex-1">{step.label}</span>
-                    <span className="text-[10px] text-text-muted bg-surface-border rounded px-1.5 py-0.5">
+                  <div key={step.label} className={`flex items-center gap-2.5 p-2 rounded-md ${step.active ? 'bg-brand/10 border border-brand/20 text-brand-light' : 'bg-surface-overlay'}`}>
+                    <Icon size={13} className={step.active ? 'text-brand-light' : 'text-text-muted'} />
+                    <span className="text-xs flex-1">{step.label}</span>
+                    <span className="text-[10px] bg-surface-border rounded px-1.5 py-0.5">
                       {step.phase}
                     </span>
                   </div>
@@ -284,11 +544,10 @@ export function ProjectDetailPage() {
         </div>
       )}
 
-      {activeTab === 'architecture' && (
-        <ComingSoon phase="Phase 3" feature="Infrastructure Architecture" />
-      )}
+      {activeTab === 'architecture' && <ArchitectureTab projectId={project.id} />}
+
       {activeTab === 'deployments' && (
-        <ComingSoon phase="Phase 5" feature="Deployment History" />
+        <ComingSoon phase="Phase 5" feature="Deployment History & Health Monitoring" />
       )}
       {activeTab === 'observability' && (
         <ComingSoon phase="Phase 6" feature="Real-Time Observability" />
@@ -302,24 +561,17 @@ export function ProjectDetailPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between py-3 border-b border-surface-border">
               <div>
-                <p className="text-sm font-medium">GitHub Integration</p>
-                <p className="text-xs text-text-muted">Connect a repository — available in Phase 2</p>
+                <p className="text-sm font-medium">GitHub Repository Integration</p>
+                <p className="text-xs text-text-muted">Connect public repositories under Architecture tab</p>
               </div>
-              <Button variant="secondary" disabled className="text-xs gap-1.5">
+              <Button
+                variant="secondary"
+                onClick={() => setActiveTab('architecture')}
+                className="text-xs gap-1.5"
+              >
                 <GitBranch size={12} />
                 Connect
               </Button>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-medium text-accent-red">Delete Project</p>
-                <p className="text-xs text-text-muted">Permanently remove this project and all data</p>
-              </div>
-              <Link to="/projects">
-                <Button variant="danger" className="text-xs">
-                  Delete
-                </Button>
-              </Link>
             </div>
           </div>
         </div>

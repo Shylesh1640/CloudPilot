@@ -1,0 +1,127 @@
+{
+  "repository": {
+    "owner": "example",
+    "name": "fastapi-react",
+    "url": "https://github.com/example/fastapi-react",
+    "commit_sha": "abc12345"
+  },
+  "languages": {
+    "primary": "Python",
+    "distribution": {
+      "Python": 65.0,
+      "TypeScript": 30.0,
+      "CSS": 5.0
+    }
+  },
+  "package_managers": ["pip", "npm"],
+  "frameworks": [
+    {
+      "name": "FastAPI",
+      "confidence": 0.98,
+      "evidence": ["backend/requirements.txt contains fastapi"]
+    },
+    {
+      "name": "React",
+      "confidence": 0.96,
+      "evidence": ["frontend/package.json contains react"]
+    }
+  ],
+  "dependencies": {
+    "pip": ["fastapi", "uvicorn", "asyncpg", "redis", "celery"],
+    "npm": ["react", "react-dom"]
+  },
+  "databases": [
+    {
+      "name": "PostgreSQL",
+      "confidence": 0.95,
+      "certainty": "Detected",
+      "evidence": ["Dependency package matching 'asyncpg'", "Docker Compose service using image 'postgres'"]
+    }
+  ],
+  "caches": [
+    {
+      "name": "Redis",
+      "confidence": 0.91,
+      "evidence": ["Dependency 'redis' detected", "Docker Compose service image 'redis'"]
+    }
+  ],
+  "queues": [
+    {
+      "name": "Celery",
+      "confidence": 0.92,
+      "evidence": ["Dependency package 'celery' detected"]
+    }
+  ],
+  "containers": {
+    "detected": true,
+    "has_dockerfile": true,
+    "has_compose": true,
+    "base_image": "python:3.12-slim",
+    "exposed_ports": [8000],
+    "compose_services": ["backend", "postgres", "redis"]
+  },
+  "ports": [
+    {
+      "port": 8000,
+      "service": "application",
+      "port_type": "application_port",
+      "source": "Dockerfile EXPOSE"
+    },
+    {
+      "port": 5432,
+      "service": "postgresql",
+      "port_type": "service_port",
+      "source": "PostgreSQL default port"
+    },
+    {
+      "port": 6379,
+      "service": "redis",
+      "port_type": "service_port",
+      "source": "Redis default port"
+    }
+  ],
+  "environment_variables": [
+    {
+      "name": "DATABASE_URL",
+      "sensitive": true,
+      "source": ".env.example"
+    },
+    {
+      "name": "REDIS_URL",
+      "sensitive": false,
+      "source": ".env.example"
+    }
+  ],
+  "services": [
+    {
+      "name": "frontend",
+      "type": "application",
+      "runtime": "node",
+      "port": 5173,
+      "confidence": 0.85,
+      "evidence": ["Top-level directory 'frontend' detected"]
+    },
+    {
+      "name": "backend",
+      "type": "application",
+      "runtime": "python",
+      "port": 8000,
+      "confidence": 0.9,
+      "evidence": ["Docker Compose service 'backend'"]
+    },
+    {
+      "name": "postgresql",
+      "type": "database",
+      "confidence": 0.95,
+      "evidence": ["PostgreSQL database detected"]
+    },
+    {
+      "name": "redis",
+      "type": "cache",
+      "confidence": 0.91,
+      "evidence": ["Redis cache detected"]
+    }
+  ],
+  "is_monorepo": false,
+  "monorepo_apps": []
+}

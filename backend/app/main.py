@@ -17,7 +17,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import auth, health, projects
+from app.api.routes import analyses, auth, deployments, health, plans, projects
 from app.core.config import settings
 from app.core.logging import RequestLoggingMiddleware, configure_logging
 
@@ -40,8 +40,11 @@ app = FastAPI(
     description=(
         "AI-powered self-healing deployment platform.\n\n"
         "**Phase 1**: Foundation — Authentication and Project Management.\n\n"
-        "Phases 2–10 will add GitHub analysis, container orchestration, "
-        "real-time observability, autoscaling, failure injection, and AI root-cause analysis."
+        "**Phase 2**: GitHub Repository Analyzer.\n\n"
+        "**Phase 3**: AI Infrastructure Architecture Planner.\n\n"
+        "**Phase 4**: Container & Service Orchestrator.\n\n"
+        "Phases 5–10 will add health monitoring, real-time observability, "
+        "autoscaling, failure injection, and AI root-cause analysis."
     ),
     version="1.0.0",
     docs_url="/docs",
@@ -66,6 +69,9 @@ API_PREFIX = "/api/v1"
 app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(projects.router, prefix=API_PREFIX)
+app.include_router(analyses.router)
+app.include_router(plans.router)
+app.include_router(deployments.router)
 
 
 # ── Global Exception Handlers ─────────────────────────────────────────────────

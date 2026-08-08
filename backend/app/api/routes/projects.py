@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -97,7 +97,6 @@ async def update_project(
 
 @router.delete(
     "/{project_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a project",
     description="Permanently delete a project and all associated data. This action cannot be undone.",
     responses={
@@ -110,6 +109,7 @@ async def delete_project(
     project_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
-) -> None:
+) -> Response:
     service = ProjectService(session)
     await service.delete_project(project_id, current_user.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
