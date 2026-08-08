@@ -1,0 +1,92 @@
+services:
+  # ─────────────────────────────────────────────
+  #  PostgreSQL Database
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: cloudpilot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cloudpilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cloudpilot}
+      POSTGRES_DB: ${POSTGRES_DB:-cloudpilot}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cloudpilot} -d ${POSTGRES_DB:-cloudpilot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - cloudpilot-network
+
+  # ─────────────────────────────────────────────
+  #  FastAPI Backend
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cloudpilot-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cloudpilot}:${POSTGRES_PASSWORD:-cloudpilot}@postgres:5432/${POSTGRES_DB:-cloudpilot}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - ./backend:/app
+    networks:
+      - cloudpilot-network
+
+  # ─────────────────────────────────────────────
+  #  React Frontend
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cloudpilot-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      VITE_API_URL: ${BACKEND_URL:-http://localhost:8000}
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5173 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - cloudpilot-network
+
+volumes:
+  postgres_data:
+    name: cloudpilot-postgres-data
+
+networks:
+  cloudpilot-network:
+    name: cloudpilot-network
+    driver: bridge
