@@ -30,6 +30,11 @@ import { DeploymentProgressTracker } from '@/components/deployment/DeploymentPro
 import { ServiceLogsModal } from '@/components/deployment/ServiceLogsModal';
 import { DeploymentHealthCard } from '@/components/health/DeploymentHealthCard';
 import { HealthEventsTimeline } from '@/components/health/HealthEventsTimeline';
+import { ObservabilitySummaryCards } from '@/components/observability/ObservabilitySummaryCards';
+import { MetricsChart } from '@/components/observability/MetricsChart';
+import { LogViewer } from '@/components/observability/LogViewer';
+import { ServiceMetricsGrid } from '@/components/observability/ServiceMetricsGrid';
+import { useObservabilitySocket } from '@/hooks/useObservabilitySocket';
 import type { Project, ServiceDefinition } from '@/types';
 
 type Tab = 'overview' | 'architecture' | 'deployments' | 'observability' | 'incidents' | 'settings';
@@ -38,7 +43,7 @@ const tabs: { id: Tab; label: string; available: boolean; phase?: string }[] = [
   { id: 'overview', label: 'Overview', available: true },
   { id: 'architecture', label: 'Architecture', available: true },
   { id: 'deployments', label: 'Deployments', available: false, phase: 'Phase 5' },
-  { id: 'observability', label: 'Observability', available: false, phase: 'Phase 6' },
+  { id: 'observability', label: 'Observability', available: true },
   { id: 'incidents', label: 'Incidents', available: false, phase: 'Phase 9' },
   { id: 'settings', label: 'Settings', available: true },
 ];
@@ -326,6 +331,52 @@ function ArchitectureTab({ projectId }: { projectId: string }) {
   );
 }
 
+function ObservabilityTab({ projectId }: { projectId: string }) {
+  const { deployment } = useDeployment();
+  const { health } = useHealth(deployment?.id ?? null);
+  const { metrics, socketStatus } = useObservabilitySocket(deployment?.id ?? null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+
+  if (!deployment) {
+    return (
+      <div className="card p-12 text-center space-y-3">
+        <Activity size={32} className="text-text-muted mx-auto" />
+        <h3 className="text-base font-bold text-text-primary">No Active Deployment Found</h3>
+        <p className="text-xs text-text-muted max-w-md mx-auto">
+          Deploy your application under the Architecture tab first to view real-time container CPU, Memory, Network telemetry, and logs.
+        </p>
+      </div>
+    );
+  }
+
+  const activeServiceId = selectedServiceId || Object.keys(metrics?.services || {})[0] || 'api';
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* 1. Real-Time Telemetry Summary Cards */}
+      <ObservabilitySummaryCards metrics={metrics} socketStatus={socketStatus} />
+
+      {/* 2. Service Telemetry Matrix */}
+      <ServiceMetricsGrid
+        metrics={metrics}
+        healthMap={health?.services}
+        selectedServiceId={activeServiceId}
+        onSelectService={(sid) => setSelectedServiceId(sid)}
+      />
+
+      {/* 3. Recharts Time-Series Chart */}
+      {deployment && activeServiceId && (
+        <MetricsChart deploymentId={deployment.id} serviceId={activeServiceId} />
+      )}
+
+      {/* 4. Terminal Log Viewer */}
+      {deployment && activeServiceId && (
+        <LogViewer deploymentId={deployment.id} serviceId={activeServiceId} />
+      )}
+    </div>
+  );
+}
+
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [project, setProject] = useState<Project | null>(null);
@@ -539,7 +590,8 @@ export function ProjectDetailPage() {
                 { label: 'Connect & Analyze GitHub repository', phase: 'Phase 2', icon: GitBranch, active: true },
                 { label: 'Generate AI infrastructure plan', phase: 'Phase 3', icon: Sparkles, active: true },
                 { label: 'Container & Service Orchestrator', phase: 'Phase 4', icon: Play, active: true },
-                { label: 'Health Check & Monitoring Engine', phase: 'Phase 5', icon: Activity },
+                { label: 'Health Check & Monitoring Engine', phase: 'Phase 5', icon: Activity, active: true },
+                { label: 'Real-Time Observability Platform', phase: 'Phase 6', icon: Radio, active: true },
               ].map((step) => {
                 const Icon = step.icon;
                 return (
@@ -562,9 +614,7 @@ export function ProjectDetailPage() {
       {activeTab === 'deployments' && (
         <ComingSoon phase="Phase 5" feature="Deployment History & Health Monitoring" />
       )}
-      {activeTab === 'observability' && (
-        <ComingSoon phase="Phase 6" feature="Real-Time Observability" />
-      )}
+      {activeTab === 'observability' && <ObservabilityTab projectId={project.id} />}
       {activeTab === 'incidents' && (
         <ComingSoon phase="Phase 9" feature="Incident Management" />
       )}

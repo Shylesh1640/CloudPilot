@@ -5,6 +5,7 @@ from app.models.repository_analysis import RepositoryAnalysis
 from app.models.infrastructure_plan import InfrastructurePlanModel
 from app.models.deployment import DeploymentModel, DeploymentServiceModel
 from app.models.health import ServiceHealthModel, HealthCheckRecordModel, HealthEventModel
+from app.models.observability import ContainerMetricsModel, ObservabilityEventModel
 
 __all__ = [
     "User",
@@ -16,4 +17,6 @@ __all__ = [
     "ServiceHealthModel",
     "HealthCheckRecordModel",
     "HealthEventModel",
+    "ContainerMetricsModel",
+    "ObservabilityEventModel",
 ]

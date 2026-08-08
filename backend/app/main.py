@@ -17,15 +17,17 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import analyses, auth, deployments, health, health_check, plans, projects
+from app.api.routes import analyses, auth, deployments, health, health_check, observability, plans, projects
 from app.core.config import settings
 from app.core.logging import RequestLoggingMiddleware, configure_logging
 from app.services.health.scheduler import HealthScheduler
+from app.services.observability.scheduler import MetricsScheduler
 
 # ── Configure logging immediately ────────────────────────────────────────────
 configure_logging()
 logger = logging.getLogger("cloudpilot.main")
 health_scheduler = HealthScheduler()
+metrics_scheduler = MetricsScheduler()
 
 
 # ── Lifespan ─────────────────────────────────────────────────────────────────
@@ -33,7 +35,9 @@ health_scheduler = HealthScheduler()
 async def lifespan(app: FastAPI):
     logger.info("🚀 CloudPilot API starting up (env=%s)", settings.ENVIRONMENT)
     health_scheduler.start()
+    metrics_scheduler.start()
     yield
+    metrics_scheduler.stop()
     health_scheduler.stop()
     logger.info("🛑 CloudPilot API shutting down")
 
@@ -48,7 +52,8 @@ app = FastAPI(
         "**Phase 3**: AI Infrastructure Architecture Planner.\n\n"
         "**Phase 4**: Container & Service Orchestrator.\n\n"
         "**Phase 5**: Deployment & Health Check Engine.\n\n"
-        "Phases 6–10 will add real-time observability, autoscaling, failure injection, and AI root-cause analysis."
+        "**Phase 6**: Real-Time Observability Platform.\n\n"
+        "Phases 7–10 will add autoscaling, failure injection, and AI root-cause analysis."
     ),
     version="1.0.0",
     docs_url="/docs",
@@ -72,6 +77,7 @@ API_PREFIX = "/api/v1"
 
 app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(health_check.router, prefix=API_PREFIX)
+app.include_router(observability.router, prefix=API_PREFIX)
 app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(projects.router, prefix=API_PREFIX)
 app.include_router(analyses.router)

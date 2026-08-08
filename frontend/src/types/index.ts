@@ -402,6 +402,66 @@ export interface HealthEvent {
   created_at: string;
 }
 
+// ── Phase 6: Real-Time Observability Platform Types ─────────────────────────
+
+export interface ContainerMetricsRead {
+  id: string;
+  project_id: string;
+  deployment_id: string;
+  service_id: string;
+  container_id: string;
+  timestamp: string;
+  cpu_percent: number;
+  memory_usage_bytes: number;
+  memory_limit_bytes?: number;
+  memory_percent: number;
+  network_rx_bytes: number;
+  network_tx_bytes: number;
+  network_rx_rate: number;
+  network_tx_rate: number;
+  block_read_bytes?: number;
+  block_write_bytes?: number;
+  restart_count: number;
+  container_state: string;
+}
+
+export interface ServiceMetricsRead {
+  service_id: string;
+  timestamp: string;
+  cpu_percent: number;
+  memory_usage_bytes: number;
+  memory_limit_bytes?: number;
+  memory_percent: number;
+  network_rx_rate: number;
+  network_tx_rate: number;
+  restart_count: number;
+  container_state: string;
+}
+
+export interface DeploymentMetricsRead {
+  deployment_id: string;
+  timestamp: string;
+  total_cpu_percent: number;
+  avg_cpu_percent: number;
+  total_memory_usage_bytes: number;
+  avg_memory_percent: number;
+  total_network_rx_rate: number;
+  total_network_tx_rate: number;
+  total_restarts: number;
+  services: Record<string, ServiceMetricsRead>;
+}
+
+export interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string;
+}
+
+export interface LogEntriesRead {
+  service_id: string;
+  lines: LogEntry[];
+}
+
 // ── Phase 4: Container & Orchestration Types ─────────────────────────────────
 
 export type DeploymentStatus =
