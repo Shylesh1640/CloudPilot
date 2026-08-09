@@ -63,4 +63,8 @@ class LogManager:
 
         # Enforce requested limit
         trimmed = entries[-tail:] if len(entries) > tail else entries
-        return LogEntriesRead(service_id=service_id, lines=trimmed)
+        return LogEntriesRead(
+            service_id=service_id,
+            lines=trimmed,
+            logs=[l.message for l in trimmed],
+        )

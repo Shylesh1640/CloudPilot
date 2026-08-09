@@ -47,6 +47,29 @@ class Settings(BaseSettings):
     AI_API_KEY: str = ""
     AI_MAX_RETRIES: int = 2
 
+    # Phase 7 controlled traffic and autoscaling safety limits.
+    AUTOSCALING_INTERVAL_SECONDS: int = 10
+    AUTOSCALING_MAX_METRIC_AGE_SECONDS: int = 30
+    TRAFFIC_MAX_RPS: int = 500
+    TRAFFIC_MAX_DURATION_SECONDS: int = 300
+    TRAFFIC_MAX_CONCURRENT_RUNS: int = 2
+
+    # Phase 8 is intentionally disabled by default in production.
+    FAILURE_INJECTION_ENABLED: bool = True
+    FAILURE_MAX_CONCURRENT_INJECTIONS: int = 1
+    FAILURE_MAX_DURATION_SECONDS: int = 120
+    RECOVERY_MAX_ATTEMPTS: int = 3
+    RECOVERY_COOLDOWN_SECONDS: int = 60
+    RECOVERY_TIMEOUT_SECONDS: int = 120
+    RECOVERY_LOOP_WINDOW_SECONDS: int = 600
+
+    # Phase 9 advisory analysis: bounded, redacted, and never an execution path.
+    AI_INCIDENT_TIMEOUT_SECONDS: int = 15
+    AI_INCIDENT_MAX_RETRIES: int = 2
+    AI_INCIDENT_CONTEXT_LOG_LINES: int = 100
+    AI_INCIDENT_CONTEXT_EVENTS: int = 20
+    AI_INCIDENT_HISTORY_LIMIT: int = 5
+
     @property
     def is_production(self) -> bool:
         return self.ENVIRONMENT.lower() == "production"

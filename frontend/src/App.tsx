@@ -10,6 +10,8 @@ import { ProjectsPage } from '@/pages/ProjectsPage';
 import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
 import { AnalysisResultPage } from '@/pages/AnalysisResultPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { AutoscalingPage } from '@/pages/AutoscalingPage';
+import { ReliabilityPage } from '@/pages/ReliabilityPage';
 
 export default function App() {
   return (
@@ -34,6 +36,8 @@ export default function App() {
             <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
             <Route path="/projects/:projectId/analysis/:analysisId" element={<AnalysisResultPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/deployments/:deploymentId/autoscaling" element={<AutoscalingPage />} />
+            <Route path="/deployments/:deploymentId/reliability" element={<ReliabilityPage />} />
           </Route>
 
           {/* ── Catch-all ────────────────────────────────────────── */}

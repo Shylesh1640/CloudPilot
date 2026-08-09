@@ -31,14 +31,14 @@ class HealthScheduler:
         self._task: asyncio.Task | None = None
         self._running = False
 
-    def start() -> None:
+    def start(self) -> None:
         if self._running:
             return
         self._running = True
         self._task = asyncio.create_task(self._run_loop())
         logger.info("HealthScheduler background loop started.")
 
-    def stop() -> None:
+    def stop(self) -> None:
         self._running = False
         if self._task:
             self._task.cancel()

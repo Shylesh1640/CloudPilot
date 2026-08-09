@@ -106,6 +106,10 @@ class DeploymentServiceModel(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     stopped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    # Replica intent is owned by CloudPilot; actual replicas are reconciled from
+    # the managed container records/runtime by the Phase 7 replica manager.
+    desired_replicas: Mapped[int] = mapped_column(Integer(), nullable=False, default=1)
+    replica_id: Mapped[int] = mapped_column(Integer(), nullable=False, default=1)
 
     # ── Relationship ─────────────────────────────────────────────────────────
     deployment: Mapped[DeploymentModel] = relationship("DeploymentModel", back_populates="services")

@@ -111,7 +111,11 @@ async def websocket_telemetry_endpoint(
 ) -> None:
     """WebSocket endpoint for real-time telemetry streaming."""
     # Authenticate token
-    payload = decode_token(token)
+    try:
+        payload = decode_access_token(token)
+    except Exception:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
     if not payload or not payload.get("sub"):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return

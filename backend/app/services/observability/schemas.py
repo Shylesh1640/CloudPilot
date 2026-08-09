@@ -68,3 +68,4 @@ class LogEntry(BaseModel):
 class LogEntriesRead(BaseModel):
     service_id: str
     lines: list[LogEntry]
+    logs: list[str] = []

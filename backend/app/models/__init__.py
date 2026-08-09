@@ -6,6 +6,9 @@ from app.models.infrastructure_plan import InfrastructurePlanModel
 from app.models.deployment import DeploymentModel, DeploymentServiceModel
 from app.models.health import ServiceHealthModel, HealthCheckRecordModel, HealthEventModel
 from app.models.observability import ContainerMetricsModel, ObservabilityEventModel
+from app.models.autoscaling import ScalingDecisionModel, ScalingEventModel, ScalingPolicyModel, TrafficRunModel
+from app.models.self_healing import AuditLogModel, FailureInjectionModel, IncidentModel, RecoveryAttemptModel, RecoveryEventModel, RecoveryPolicyModel
+from app.models.ai_incident import AIDecisionTraceModel, IncidentMemoryModel
 
 __all__ = [
     "User",
@@ -19,4 +22,10 @@ __all__ = [
     "HealthEventModel",
     "ContainerMetricsModel",
     "ObservabilityEventModel",
+    "ScalingPolicyModel",
+    "ScalingDecisionModel",
+    "ScalingEventModel",
+    "TrafficRunModel",
+    "FailureInjectionModel", "IncidentModel", "RecoveryPolicyModel", "RecoveryAttemptModel", "RecoveryEventModel", "AuditLogModel",
+    "IncidentMemoryModel", "AIDecisionTraceModel",
 ]

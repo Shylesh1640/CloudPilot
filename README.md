@@ -1,5 +1,19 @@
 # CloudPilot
 
+## Phase 7 — Traffic & deterministic autoscaling
+
+Phase 7 adds controlled load testing and a deterministic, policy-driven horizontal autoscaler. The decision path is `telemetry → stabilization window → threshold/hysteresis → cooldown → safety validation → replica manager → Docker runtime`; no LLM participates in replica decisions.
+
+Scaling policies support CPU, memory, request-rate (only when supplied by application telemetry), and p95-latency targets. Scale-up uses any breached configured metric; scale-down requires every configured metric to be below its lower hysteresis threshold. Policies enforce min/max replicas, bounded steps, separate cooldowns, stale-telemetry blocking, dry-run, and simulation flags.
+
+Authenticated APIs include `GET/PUT /api/v1/deployments/{deployment_id}/services/{service_id}/scaling`, policy toggling, manual safe scaling, decision/event history, and managed traffic runs at `/api/v1/deployments/{deployment_id}/traffic`. Traffic can only target a running CloudPilot-managed public service and is capped by `TRAFFIC_MAX_RPS` (500), `TRAFFIC_MAX_DURATION_SECONDS` (300), and `TRAFFIC_MAX_CONCURRENT_RUNS` (2). The dashboard is available at `/deployments/:deploymentId/autoscaling`.
+
+## Phase 8 — Failure injection & self-healing
+
+Phase 8 adds an evidence-driven, allowlisted recovery path: health/container signals create a deduplicated incident, dependency analysis identifies a root service, a deterministic policy selects the least disruptive recovery, and a safety gate verifies policy, cooldown, attempts, deployment state, and operation locks before the recovery executor can use the container runtime. Recovery is verified through both runtime state and Phase 5 health before resolution; failed repeated attempts are escalated with exponential backoff and a full audit trail.
+
+Controlled injection is restricted to active CloudPilot-managed services in non-production environments. The supported scenarios are container stop, controlled kill-equivalent, single-replica failure, service failure, and health-check simulation. APIs provide injection, incidents, timelines, recovery attempts, manual recovery, and safe recovery-policy configuration. The reliability dashboard is at `/deployments/:deploymentId/reliability`.
+
 > AI-powered self-healing deployment platform.
 
 CloudPilot allows developers to connect a GitHub repository, analyze it automatically, generate infrastructure, build and deploy containers, monitor services in real time, autoscale, inject failures, and self-heal — all powered by AI.
@@ -207,11 +221,15 @@ cloudpilot/
 
 ---
 
-## Ready for Phase 2
+## Reliability and AI incident intelligence
 
-Phase 2 will add:
-- GitHub repository connection and OAuth
-- Automatic repository analysis (language, framework, dependencies)
-- Analysis result storage and display in the Architecture tab
+CloudPilot includes controlled traffic, deterministic autoscaling, failure injection, and self-healing. Phase 9 adds advisory incident intelligence:
 
-See `backend/app/services/repository_analyzer.py` for the prepared interface.
+- incident-scoped context with bounded logs, metrics, topology, recovery events, and relevant prior incidents;
+- redaction before provider calls and redacted structured decision traces at rest;
+- schema validation, safe action allow-listing, and deterministic fallback when AI is unavailable, times out, or returns invalid output;
+- incident chat limited to explanatory, non-executing questions.
+
+AI suggestions never invoke Docker, shells, databases, or recovery actions. Recovery remains governed by the existing deterministic policy.
+
+See [AI.md](AI.md), [API.md](API.md), and [SECURITY.md](SECURITY.md) for operational details.

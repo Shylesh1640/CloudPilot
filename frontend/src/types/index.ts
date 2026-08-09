@@ -529,5 +529,74 @@ export interface ServiceLogsRead {
   logs: string;
 }
 
+// Phase 7: Traffic Generator & Deterministic Autoscaling
+export interface ScalingPolicyRead {
+  id: string;
+  project_id: string;
+  deployment_id: string;
+  service_id: string;
+  enabled: boolean;
+  min_replicas: number;
+  max_replicas: number;
+  target_cpu: number | null;
+  target_memory: number | null;
+  target_request_rate: number | null;
+  target_latency: number | null;
+  scale_up_threshold: number | null;
+  scale_down_threshold: number | null;
+  scale_up_cooldown: number;
+  scale_down_cooldown: number;
+  stabilization_window: number;
+  max_scale_up_step: number;
+  max_scale_down_step: number;
+  dry_run: boolean;
+  simulation_mode: boolean;
+  cooldown_remaining_seconds: number;
+}
 
+export interface ScalingDecisionRead {
+  id: string;
+  service_id: string;
+  current_replicas: number;
+  recommended_replicas: number;
+  action: string;
+  status: string;
+  reason: string;
+  trigger_metric: string | null;
+  metric_value: number | null;
+  target_value: number | null;
+  metrics_json: Record<string, number | null> | null;
+  created_at: string;
+}
 
+export interface ScalingEventRead {
+  id: string;
+  service_id: string;
+  event_type: string;
+  message: string;
+  metadata_json: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export type TrafficScenario = 'constant' | 'ramp_up' | 'ramp_down' | 'spike';
+export interface TrafficRunRead {
+  id: string;
+  project_id: string;
+  deployment_id: string;
+  service_id: string;
+  scenario: TrafficScenario;
+  configuration: Record<string, number | string | null>;
+  status: string;
+  current_rps: number;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+// Phase 8: Failure Injection & Autonomous Self-Healing
+export type FailureScenario = 'CONTAINER_STOP' | 'CONTAINER_KILL' | 'SERVICE_FAILURE' | 'REPLICA_FAILURE' | 'HEALTH_CHECK_FAILURE';
+export interface FailureInjectionRead { id: string; project_id: string; deployment_id: string; service_id: string; target_container_id: string | null; scenario: FailureScenario; status: string; simulation: boolean; started_at: string | null; completed_at: string | null; created_at: string; }
+export interface IncidentRead { id: string; project_id: string; deployment_id: string; service_id: string; severity: string; status: string; trigger: string; root_cause_service_id: string | null; root_cause_type: string | null; diagnosis: { root_service?: string; impacted_services?: string[]; evidence?: string[] } | null; opened_at: string; resolved_at: string | null; created_at: string; }
+export interface RecoveryAttemptRead { id: string; incident_id: string; action: string; target_service_id: string; target_container_id: string | null; attempt_number: number; status: string; reason: string; started_at: string | null; completed_at: string | null; error_message: string | null; }
+export interface RecoveryEventRead { id: string; incident_id: string; event_type: string; message: string; metadata_json: Record<string, unknown> | null; created_at: string; }
+export interface IncidentAIAnalysis { summary: string; root_cause: { service?: string | null; type?: string; confidence?: string }; evidence: string[]; impact: string[]; recommendations: Array<{ action: string; target: string; reason: string; confidence: string }>; risk: string; status: string; fallback: boolean; cached: boolean; trace_id: string; validation: { accepted?: string[]; rejected?: string[]; fallback?: boolean }; }

@@ -78,8 +78,9 @@ class ObservabilityRepository:
         return list(result.scalars().all())
 
     async def purge_old_metrics(self, retention_hours: int = 24) -> int:
-        cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=retention_hours)
-        stmt = delete(ContainerMetricsModel).where(ContainerMetricsModel.timestamp < cutoff)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        cutoff = now - datetime.timedelta(hours=retention_hours)
+        stmt = delete(ContainerMetricsModel).where(ContainerMetricsModel.timestamp <= cutoff)
         result = await self._session.execute(stmt)
         await self._session.commit()
         return result.rowcount or 0

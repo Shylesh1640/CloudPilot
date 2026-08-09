@@ -24,6 +24,8 @@ class DeploymentServiceRead(BaseModel):
     started_at: datetime | None
     stopped_at: datetime | None
     error_message: str | None
+    desired_replicas: int = 1
+    replica_id: int = 1
 
     model_config = {"from_attributes": True}
 

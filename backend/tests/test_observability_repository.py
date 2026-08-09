@@ -19,10 +19,10 @@ from app.repositories.user_repository import UserRepository
 async def test_observability_repository_purge():
     async with TestSessionLocal() as session:
         user_repo = UserRepository(session)
-        user = await user_repo.create("obs_user@example.com", "Password123!")
+        user = await user_repo.create(name="Obs User", email="obs_user@example.com", password_hash="Password123!")
 
         proj_repo = ProjectRepository(session)
-        project = await proj_repo.create(user.id, name="obs-proj")
+        project = await proj_repo.create(user_id=user.id, name="obs-proj")
 
         anal_repo = AnalysisRepository(session)
         analysis = await anal_repo.create(
@@ -32,7 +32,7 @@ async def test_observability_repository_purge():
             repository_name="obs",
         )
         plan_repo = PlanRepository(session)
-        plan = await plan_repo.create(project.id, analysis.id)
+        plan = await plan_repo.create(project_id=project.id, repository_analysis_id=analysis.id)
 
         dep_repo = DeploymentRepository(session)
         deployment = await dep_repo.create(project_id=project.id, infrastructure_plan_id=plan.id)
@@ -49,8 +49,8 @@ async def test_observability_repository_purge():
             cpu_percent=10.0,
             memory_usage_bytes=1000,
         )
-        # Insert old metric (30 hours ago)
-        old_ts = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=30)
+        # Insert old metric (48 hours ago)
+        old_ts = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)
         m_old = ContainerMetricsModel(
             project_id=project.id,
             deployment_id=deployment.id,

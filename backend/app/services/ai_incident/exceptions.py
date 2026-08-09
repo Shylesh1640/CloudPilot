@@ -1,0 +1,2 @@
+class IncidentAIError(Exception):
+    pass
