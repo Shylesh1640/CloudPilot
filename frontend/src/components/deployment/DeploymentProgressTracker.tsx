@@ -1,5 +1,5 @@
-import { CheckCircle2, Circle, LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Layers, Network, HardDrive, Cpu, Play, AlertCircle } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { CheckCircle2, Layers, Network, HardDrive, Cpu, Play, AlertCircle } from 'lucide-react';
 import type { DeploymentRead, DeploymentStatus } from '@/types';
 
 interface Props {
