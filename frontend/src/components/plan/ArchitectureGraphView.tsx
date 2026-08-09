@@ -23,6 +23,7 @@ export function ArchitectureGraphView({
   graph,
   services,
   deploymentServices,
+  healthMap,
   selectedServiceId,
   onSelectService,
 }: Props) {
