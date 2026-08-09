@@ -116,7 +116,7 @@ class OpenRouterProvider(BaseAIProvider):
             "X-Title": "CloudPilot",
         }
         payload: dict[str, Any] = {
-            "model": self.model or "meta-llama/llama-3.1-8b-instruct:free",
+            "model": self.model or "openrouter/free",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
