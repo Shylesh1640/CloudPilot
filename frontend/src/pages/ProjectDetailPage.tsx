@@ -12,6 +12,7 @@ import {
   Play,
   Square,
   Sparkles,
+  Radio,
 } from 'lucide-react';
 import { projectService } from '@/services/projectService';
 import { getErrorMessage } from '@/services/api';
