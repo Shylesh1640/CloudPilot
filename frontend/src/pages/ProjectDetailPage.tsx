@@ -35,6 +35,7 @@ import { ObservabilitySummaryCards } from '@/components/observability/Observabil
 import { MetricsChart } from '@/components/observability/MetricsChart';
 import { LogViewer } from '@/components/observability/LogViewer';
 import { ServiceMetricsGrid } from '@/components/observability/ServiceMetricsGrid';
+import { ReadmeGeneratorPanel } from '@/components/readme/ReadmeGeneratorPanel';
 import { useObservabilitySocket } from '@/hooks/useObservabilitySocket';
 import type { Project, ServiceDefinition } from '@/types';
 
@@ -214,6 +215,14 @@ function ArchitectureTab({ projectId }: { projectId: string }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* 3b. README Generator — shown once analysis is complete */}
+      {analysis && analysis.status === 'COMPLETED' && (
+        <ReadmeGeneratorPanel
+          analysisId={analysis.id}
+          repoName={analysis.repository_name || 'repository'}
+        />
       )}
 
       {/* 4. Plan Generation Progress */}

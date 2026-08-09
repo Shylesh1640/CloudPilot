@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { analysisService } from '@/services/analysisService';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ReadmeGeneratorPanel } from '@/components/readme/ReadmeGeneratorPanel';
 import type { RepositoryAnalysis, RepositoryProfile } from '@/types';
 
 function ConfidenceBadge({ confidence }: { confidence: number }) {
@@ -43,7 +44,7 @@ export function AnalysisResultPage() {
   const [analysis, setAnalysis] = useState<RepositoryAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'dependencies' | 'services' | 'infrastructure' | 'ports' | 'env'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'frameworks' | 'services' | 'infrastructure' | 'dependencies' | 'ports' | 'env' | 'readme'>('overview');
 
   useEffect(() => {
     const load = async () => {
@@ -162,6 +163,7 @@ export function AnalysisResultPage() {
             { id: 'dependencies', label: 'Dependencies' },
             { id: 'ports', label: 'Ports' },
             { id: 'env', label: 'Environment' },
+            { id: 'readme', label: '✨ Generate README' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -466,6 +468,16 @@ export function AnalysisResultPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab: README Generator */}
+      {activeTab === 'readme' && analysisId && (
+        <div className="animate-fade-in">
+          <ReadmeGeneratorPanel
+            analysisId={analysisId}
+            repoName={profile.repository.name}
+          />
         </div>
       )}
     </div>

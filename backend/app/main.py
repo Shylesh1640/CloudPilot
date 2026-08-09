@@ -17,7 +17,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import ai_incident, analyses, auth, autoscaling, deployments, health, health_check, observability, plans, projects, self_healing
+from app.api.routes import ai_incident, analyses, auth, autoscaling, deployments, health, health_check, observability, plans, projects, readme, self_healing
 from app.core.config import settings
 from app.core.logging import RequestLoggingMiddleware, configure_logging
 from app.services.health.scheduler import HealthScheduler
@@ -102,6 +102,7 @@ app.include_router(deployments.router)
 app.include_router(autoscaling.router)
 app.include_router(self_healing.router)
 app.include_router(ai_incident.router)
+app.include_router(readme.router)
 
 
 # ── Global Exception Handlers ─────────────────────────────────────────────────

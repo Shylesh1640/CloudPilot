@@ -25,101 +25,122 @@ class BaseAIProvider(abc.ABC):
         """Send prompt to LLM and return raw JSON response string."""
         pass
 
+    async def generate_text(self, prompt: str, system_prompt: str) -> str:
+        """Send prompt to LLM and return raw text response (markdown, prose, etc.).
+        Default implementation calls generate_json and strips any JSON wrapping.
+        Providers should override this for cleaner text responses.
+        """
+        return await self.generate_json(prompt, system_prompt)
+
 
 class OpenAIProvider(BaseAIProvider):
     """OpenAI API provider implementation."""
 
-    async def generate_json(self, prompt: str, system_prompt: str) -> str:
+    async def _call(self, prompt: str, system_prompt: str, json_mode: bool = False) -> str:
         if not self.api_key:
             raise AIProviderError("OpenAI API key is not configured.")
-
         url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        payload: dict[str, Any] = {
             "model": self.model or "gpt-4o-mini",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
-            "response_format": {"type": "json_object"},
             "temperature": 0.2,
         }
-
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+        async with httpx.AsyncClient(timeout=90.0) as client:
             try:
                 res = await client.post(url, headers=headers, json=payload)
                 if res.status_code != 200:
                     raise AIProviderError(f"OpenAI API error ({res.status_code}): {res.text}")
-                data = res.json()
-                return data["choices"][0]["message"]["content"]
+                return res.json()["choices"][0]["message"]["content"]
+            except AIProviderError:
+                raise
             except Exception as err:
                 raise AIProviderError(f"Failed to communicate with OpenAI: {err}")
+
+    async def generate_json(self, prompt: str, system_prompt: str) -> str:
+        return await self._call(prompt, system_prompt, json_mode=True)
+
+    async def generate_text(self, prompt: str, system_prompt: str) -> str:
+        return await self._call(prompt, system_prompt, json_mode=False)
 
 
 class GeminiProvider(BaseAIProvider):
     """Google Gemini REST API provider implementation."""
 
-    async def generate_json(self, prompt: str, system_prompt: str) -> str:
+    async def _call(self, prompt: str, system_prompt: str, json_mode: bool = False) -> str:
         if not self.api_key:
             raise AIProviderError("Gemini API key is not configured.")
-
         model = self.model or "gemini-1.5-flash"
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
         headers = {"Content-Type": "application/json"}
+        mime = "application/json" if json_mode else "text/plain"
         payload = {
             "systemInstruction": {"parts": [{"text": system_prompt}]},
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "responseMimeType": "application/json",
-                "temperature": 0.2,
-            },
+            "generationConfig": {"responseMimeType": mime, "temperature": 0.2},
         }
-
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=90.0) as client:
             try:
                 res = await client.post(url, headers=headers, json=payload)
                 if res.status_code != 200:
                     raise AIProviderError(f"Gemini API error ({res.status_code}): {res.text}")
-                data = res.json()
-                return data["candidates"][0]["content"]["parts"][0]["text"]
+                return res.json()["candidates"][0]["content"]["parts"][0]["text"]
+            except AIProviderError:
+                raise
             except Exception as err:
                 raise AIProviderError(f"Failed to communicate with Gemini: {err}")
 
+    async def generate_json(self, prompt: str, system_prompt: str) -> str:
+        return await self._call(prompt, system_prompt, json_mode=True)
+
+    async def generate_text(self, prompt: str, system_prompt: str) -> str:
+        return await self._call(prompt, system_prompt, json_mode=False)
+
 
 class OpenRouterProvider(BaseAIProvider):
-    """OpenRouter API provider implementation."""
+    """OpenRouter API provider implementation (OpenAI-compatible)."""
 
-    async def generate_json(self, prompt: str, system_prompt: str) -> str:
+    async def _call(self, prompt: str, system_prompt: str, json_mode: bool = False) -> str:
         if not self.api_key:
             raise AIProviderError("OpenRouter API key is not configured.")
-
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
+            "HTTP-Referer": "https://cloudpilot.dev",
+            "X-Title": "CloudPilot",
         }
-        payload = {
-            "model": self.model or "meta-llama/llama-3.1-8b-instruct",
+        payload: dict[str, Any] = {
+            "model": self.model or "meta-llama/llama-3.1-8b-instruct:free",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
-            "response_format": {"type": "json_object"},
             "temperature": 0.2,
         }
-
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+        async with httpx.AsyncClient(timeout=120.0) as client:
             try:
                 res = await client.post(url, headers=headers, json=payload)
                 if res.status_code != 200:
                     raise AIProviderError(f"OpenRouter API error ({res.status_code}): {res.text}")
-                data = res.json()
-                return data["choices"][0]["message"]["content"]
+                return res.json()["choices"][0]["message"]["content"]
+            except AIProviderError:
+                raise
             except Exception as err:
                 raise AIProviderError(f"Failed to communicate with OpenRouter: {err}")
+
+    async def generate_json(self, prompt: str, system_prompt: str) -> str:
+        return await self._call(prompt, system_prompt, json_mode=True)
+
+    async def generate_text(self, prompt: str, system_prompt: str) -> str:
+        return await self._call(prompt, system_prompt, json_mode=False)
 
 
 class DeterministicFallbackProvider(BaseAIProvider):
